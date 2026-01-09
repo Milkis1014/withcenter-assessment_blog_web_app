@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Blog Web App
 
 A simple blog web application built with React, TypeScript, Redux, and Supabase.
@@ -134,3 +135,7 @@ src/
 - Users can only edit/delete their own blogs
 - Pagination is set to 10 blogs per page by default
 - All routes except `/register` and `/login` are protected and require authentication
+=======
+# withcenter-assessment_blog_web_app
+Simple Blog Web Application using ReactJS
+>>>>>>> f297b4ac6a5410c5951f8afba670d11742975584
