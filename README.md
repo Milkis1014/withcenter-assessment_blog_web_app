@@ -1,4 +1,7 @@
 
+# Blog Web App
+
+
 ## Simple Blog Web App (React + TypeScript + Redux + Supabase)
 
 A simple blog web application built with **React**, **TypeScript**, **Redux Toolkit**, and **Supabase**.
