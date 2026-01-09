@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Blog Web App
 
 A simple blog web application built with React, TypeScript, Redux, and Supabase.
