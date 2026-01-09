@@ -1,141 +1,300 @@
-<<<<<<< HEAD
-# Blog Web App
 
-A simple blog web application built with React, TypeScript, Redux, and Supabase.
+## Simple Blog Web App (React + TypeScript + Redux + Supabase)
 
-## Features
+A simple blog web application built with **React**, **TypeScript**, **Redux Toolkit**, and **Supabase**.
 
-- User Authentication (Registration, Login, Logout)
-- Blog CRUD Operations (Create, Read, Update, Delete)
-- Blog Listing with Pagination
-- Protected Routes
-- Modern UI with responsive design
+Users can register, log in, and manage their own blog posts (create, read, update, delete), with blog listing including pagination.
 
-## Tech Stack
+---
 
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Redux Toolkit** - State management
-- **Supabase** - Backend (Authentication & Database)
-- **React Router** - Routing
-- **Vite** - Build tool
+### Features
 
-## Setup Instructions
+- **Authentication**
+  - User registration (email + password)
+  - Login
+  - Logout
+  - Protected routes: only logged-in users can access blog pages
 
-### 1. Install Dependencies
+- **Blog Management (CRUD)**
+  - Create a blog post
+  - View blog details
+  - Update a blog post
+  - Delete a blog post
+  - List all blogs with **pagination** (10 per page by default)
+
+- **Authorization**
+  - Users can only **edit/delete their own posts**
+  - Everyone can read all posts
+
+- **Tech Stack**
+  - **React 18** + **TypeScript**
+  - **Vite** dev/build tool
+  - **Redux Toolkit** + `react-redux`
+  - **React Router v6**
+  - **Supabase** (Auth + Postgres + Row Level Security)
+
+---
+
+### Getting Started
+
+#### Prerequisites
+
+- **Node.js** (v18+ recommended)
+- **npm** (comes with Node)
+- A **Supabase Cloud** account: `https://supabase.com`
+
+---
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+```
+
+---
+
+### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Set up Supabase
+This installs:
 
-1. Create a new project at [Supabase](https://supabase.com)
-2. Go to Project Settings > API to get your project URL and anon key
-3. Create a `.env` file in the root directory:
+- `react`, `react-dom`
+- `@reduxjs/toolkit`, `react-redux`
+- `@supabase/supabase-js`
+- `react-router-dom`
+- TypeScript + Vite + ESLint tooling
+
+---
+
+### 3. Set Up Supabase
+
+#### 3.1 Create a Supabase Project
+
+1. Go to `https://supabase.com` and sign in.
+2. Click **New project**.
+3. Choose:
+   - **Name**: e.g. `blog-web-app`
+   - **Database password**: choose and save it
+   - **Region**: closest to you
+4. Click **Create new project** and wait until it’s ready.
+
+#### 3.2 Get API URL and anon key
+
+1. In your Supabase project, go to **Settings → API**.
+2. Note:
+   - **Project URL** (API URL)
+   - **anon public key** (JWT)
+
+You’ll put these into your `.env`.
+
+#### 3.3 Create the `.env` File
+
+In the project root, create a file named `.env`:
 
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_ANON_PUBLIC_KEY_HERE
 ```
 
-### 3. Set up Database
+- Replace both values with the ones from **Settings → API**.
+- Vite exposes these as `import.meta.env.VITE_SUPABASE_URL` and `import.meta.env.VITE_SUPABASE_ANON_KEY`.
 
-In your Supabase project, run the following SQL in the SQL Editor:
+#### 3.4 Create the `blogs` Table and Policies
 
-```sql
--- Create blogs table
-CREATE TABLE blogs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
+In this repo there is a file: `supabase-setup.sql`.
 
--- Enable Row Level Security
-ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
+1. Open your Supabase project dashboard.
+2. In the left sidebar, go to **SQL → New query**.
+3. Open `supabase-setup.sql` locally and **copy all its contents**.
+4. Paste into Supabase’s SQL editor.
+5. Click **Run**.
+6. Confirm the query runs successfully (no errors).
 
--- Create policy to allow users to read all blogs
-CREATE POLICY "Users can read all blogs" ON blogs
-  FOR SELECT USING (true);
+This will:
 
--- Create policy to allow users to create their own blogs
-CREATE POLICY "Users can create their own blogs" ON blogs
-  FOR INSERT WITH CHECK (auth.uid() = author_id);
+- Create a `public.blogs` table:
+  - `id` (UUID, PK)
+  - `title`, `content`
+  - `author_id` (references `auth.users(id)`)
+  - `created_at`, `updated_at`
+- Enable **Row Level Security**.
+- Add policies so:
+  - Anyone can **read** all blogs.
+  - Users can **insert/update/delete** only their own blogs.
 
--- Create policy to allow users to update their own blogs
-CREATE POLICY "Users can update their own blogs" ON blogs
-  FOR UPDATE USING (auth.uid() = author_id);
+You can verify the table in **Table Editor** under `blogs`.
 
--- Create policy to allow users to delete their own blogs
-CREATE POLICY "Users can delete their own blogs" ON blogs
-  FOR DELETE USING (auth.uid() = author_id);
-```
+#### 3.5 Disable Email Confirmation (for simple local testing)
 
-### 4. Disable Email Confirmation
+1. In Supabase dashboard, go to **Authentication → Settings** (or **Authentication → Providers**, depending on UI).
+2. Under **Email Auth** (or similar):
+   - Turn **off** “Enable email confirmations”.
+3. Save changes.
 
-1. Go to Authentication > Settings in your Supabase dashboard
-2. Under "Email Auth", disable "Enable email confirmations"
+Now users can log in immediately after registering without clicking an email link.
 
-### 5. Run the Development Server
+---
+
+### 4. Run the App
+
+From the project root:
 
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
+By default, Vite will start on:
 
-## Project Structure
+- `http://localhost:5173`
 
-```
-src/
-├── components/       # Reusable components
-│   └── ProtectedRoute.tsx
-├── lib/             # External library configurations
-│   └── supabase.ts
-├── pages/           # Page components
-│   ├── Register.tsx
-│   ├── Login.tsx
-│   ├── BlogList.tsx
-│   ├── BlogCreate.tsx
-│   ├── BlogEdit.tsx
-│   └── BlogView.tsx
-├── store/           # Redux store configuration
-│   ├── slices/
-│   │   ├── authSlice.ts
-│   │   └── blogSlice.ts
-│   ├── hooks.ts
-│   └── store.ts
-├── App.tsx          # Main app component with routing
-├── main.tsx         # Entry point
-└── index.css        # Global styles
-```
+---
 
-## Available Scripts
+### Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+- **`npm run dev`** – Start development server
+- **`npm run build`** – Build for production
+- **`npm run preview`** – Preview the production build locally
+- **`npm run lint`** – Run ESLint
 
-## Pages
+---
 
-- `/register` - User registration
-- `/login` - User login
-- `/blogs` - Blog listing with pagination (protected)
-- `/blogs/create` - Create new blog (protected)
-- `/blogs/:id` - View blog details (protected)
-- `/blogs/:id/edit` - Edit blog (protected)
+### Application Routes
 
-## Notes
+- **Public**
+  - `GET /register` – registration page
+  - `GET /login` – login page
 
-- Email confirmation is disabled for easier testing during development
-- Users can only edit/delete their own blogs
-- Pagination is set to 10 blogs per page by default
-- All routes except `/register` and `/login` are protected and require authentication
-=======
-# withcenter-assessment_blog_web_app
-Simple Blog Web Application using ReactJS
->>>>>>> f297b4ac6a5410c5951f8afba670d11742975584
+- **Protected** (only authenticated users)
+  - `GET /blogs` – list blogs with pagination
+  - `GET /blogs/create` – create new blog
+  - `GET /blogs/:id` – view blog details
+  - `GET /blogs/:id/edit` – edit blog
+
+Protected routes are implemented via a `ProtectedRoute` component that checks the Redux-authenticated user.
+
+---
+
+### Architecture Overview
+
+#### Frontend
+
+- **Entry point**: `src/main.tsx`
+  - Renders `<App />` inside React’s root
+  - Wraps the app with Redux `<Provider store={store}>`
+
+- **Routing**: `src/App.tsx`
+  - Uses `BrowserRouter`, `Routes`, and `Route` (React Router v6)
+  - Public routes: `/login`, `/register`
+  - Protected routes: `/blogs`, `/blogs/create`, `/blogs/:id`, `/blogs/:id/edit`
+  - Uses `ProtectedRoute` to redirect unauthenticated users to `/login`
+  - Listens for Supabase auth state changes and syncs them into Redux (`setUser`, `setSession`)
+
+- **Supabase Client**: `src/lib/supabase.ts`
+  - Creates a Supabase client with:
+    - `VITE_SUPABASE_URL`
+    - `VITE_SUPABASE_ANON_KEY`
+
+- **Redux Store**: `src/store/store.ts`
+  - Combines:
+    - `auth` slice (`authSlice.ts`)
+    - `blog` slice (`blogSlice.ts`)
+  - Exposes `RootState` and `AppDispatch` types.
+
+- **Typed Hooks**: `src/store/hooks.ts`
+  - `useAppDispatch()` – typed wrapper around `useDispatch`
+  - `useAppSelector` – typed `useSelector` hook
+
+#### Slices
+
+- **Auth Slice**: `src/store/slices/authSlice.ts`
+  - State: `user`, `session`, `loading`, `error`
+  - Thunks:
+    - `signUp({ email, password })`
+    - `signIn({ email, password })`
+    - `signOut()`
+    - `getSession()`
+  - Reducers:
+    - `setUser`, `setSession`, `clearError`
+  - Integrates with `supabase.auth.*` methods.
+
+- **Blog Slice**: `src/store/slices/blogSlice.ts`
+  - State:
+    - `blogs`, `currentBlog`, `loading`, `error`
+    - `totalCount`, `currentPage`, `pageSize`
+  - Thunks:
+    - `fetchBlogs({ page, pageSize })`
+    - `fetchBlogById(id)`
+    - `createBlog({ title, content, author_id })`
+    - `updateBlog({ id, title, content })`
+    - `deleteBlog(id)`
+  - Uses `supabase.from('blogs')` queries for all CRUD operations.
+  - Stores error messages (including Supabase errors) for the UI to display.
+
+#### Pages
+
+All pages use inline, minimal styling for clarity.
+
+- `src/pages/Register.tsx`
+  - Registration form (email, password, confirm password)
+  - Calls `signUp` thunk
+  - On success, navigates to `/login`
+
+- `src/pages/Login.tsx`
+  - Login form (email, password)
+  - Calls `signIn` thunk
+  - On success, navigates to `/blogs`
+
+- `src/pages/BlogList.tsx`
+  - Shows:
+    - Logged-in user email
+    - “Create Blog” button
+    - “Logout” button
+  - Fetches paginated blogs via `fetchBlogs`
+  - Shows pagination (Previous/Next, current page / total pages)
+  - Each blog card: title, excerpt, created/updated dates, and actions:
+    - View (`/blogs/:id`)
+    - Edit (`/blogs/:id/edit`)
+    - Delete (dispatches `deleteBlog`)
+
+- `src/pages/BlogCreate.tsx`
+  - Form for `title` and `content`
+  - Uses authenticated `user.id` as `author_id`
+  - Dispatches `createBlog` and then navigates to `/blogs`
+
+- `src/pages/BlogEdit.tsx`
+  - Loads blog by `id` with `fetchBlogById`
+  - Pre-fills form with existing data
+  - Only allows editing if the current user is the `author_id`
+  - Dispatches `updateBlog` and navigates back to `/blogs`
+
+- `src/pages/BlogView.tsx`
+  - Displays a single blog post with full content
+  - Shows created/updated timestamps
+  - If the current user is the author, shows **Edit** and **Delete** actions
+
+- `src/components/ProtectedRoute.tsx`
+  - Checks if `auth.user` exists
+  - If not authenticated, redirects to `/login`
+  - Otherwise, renders the child component
+
+---
+
+### Error Handling & Common Issues
+
+- **“Could not find the table 'public.blogs' in the schema cache”**
+  - Means the `blogs` table does not exist (or migrations not run).
+  - Fix: ensure you ran `supabase-setup.sql` in the correct Supabase project.
+
+- **Auth errors (“Sign in failed”, etc.)**
+  - Check:
+    - `.env` values (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+    - Supabase Authentication settings (email/password enabled, confirmations disabled if you want instant log-in).
+
+
+
+
+
