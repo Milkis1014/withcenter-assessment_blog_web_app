@@ -51,8 +51,8 @@ Users can register, log in, and manage their own blog posts (create, read, updat
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/Milkis1014/withcenter-assessment_blog_web_app.git
+cd withcenter-assessment_blog_web_app
 ```
 
 ---
