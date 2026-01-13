@@ -33,7 +33,7 @@ function App() {
   }, [dispatch])
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename='/withcenter-assessment_blog_web_app'>
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
