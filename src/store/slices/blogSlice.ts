@@ -105,10 +105,40 @@ export const createBlog = createAsyncThunk(
 
 export const updateBlog = createAsyncThunk(
   'blog/updateBlog',
-  async ({ id, title, content }: { id: string; title: string; content: string }) => {
+  async ({ id, title, content, author_id, imageFiles, existingUrls }: { 
+    id: string; 
+    title: string; 
+    content: string 
+    author_id: string;
+    imageFiles: File[];
+    existingUrls: string[];
+  }) => {
+    const imageUrls: string[] = [];
+
+    for (const file of imageFiles) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${author_id}/${fileName}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(filePath, file);
+      
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+      /* This code snippet is fetching the public URL of an image file stored in a Supabase storage
+      bucket. */
+      const { data: { publicUrl } } = await supabase.storage
+        .from('blog-images')
+        .getPublicUrl(uploadData.path);
+      
+      imageUrls.push(publicUrl);  
+    }
+
+    const finalImageUrls = [...existingUrls, ...imageUrls];
+
     const { data, error } = await supabase
       .from('blogs')
-      .update({ title, content, updated_at: new Date().toISOString() })
+      .update({ title, content, updated_at: new Date().toISOString(), image_urls: finalImageUrls })
       .eq('id', id)
       .select()
       .single()

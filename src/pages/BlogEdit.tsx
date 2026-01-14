@@ -6,6 +6,8 @@ import { fetchBlogById, updateBlog, clearCurrentBlog } from '../store/slices/blo
 const BlogEdit = () => {
   const { id } = useParams<{ id: string }>()
   const [title, setTitle] = useState('')
+  const [images, setImages] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const [content, setContent] = useState('')
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
@@ -25,8 +27,24 @@ const BlogEdit = () => {
     if (currentBlog) {
       setTitle(currentBlog.title)
       setContent(currentBlog.content)
+      setPreviews(currentBlog.image_urls)
     }
   }, [currentBlog])
+
+  const removeImage = (index: number) => {
+    URL.revokeObjectURL(previews[index]);
+
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || [])
+    setImages((prev) => [...prev, ...selectedFiles])
+
+    const newPreviews = selectedFiles.map(file => URL.createObjectURL(file))
+    setPreviews((prev) => [...prev, ...newPreviews])
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -47,15 +65,24 @@ const BlogEdit = () => {
       return
     }
 
+    const existingUrls = previews.filter(url => !url.startsWith('blob:'))
+    
     try {
-      await dispatch(updateBlog({ id, title, content })).unwrap()
+      await dispatch(updateBlog({ 
+        id, 
+        title, 
+        content, 
+        author_id: user.id,
+        imageFiles: images,
+        existingUrls: existingUrls
+      })).unwrap()
       navigate('/blogs')
     } catch (err) {
       console.error('Update blog error:', err)
     }
   }
 
-  if (loading && !currentBlog) {
+  if (loading) {
     return (
       <div style={styles.container}>
         <div style={styles.loading}>Loading blog...</div>
@@ -63,7 +90,7 @@ const BlogEdit = () => {
     )
   }
 
-  if (!currentBlog) {
+  if (!loading && !currentBlog) {
     return (
       <div style={styles.container}>
         <div style={styles.error}>Blog not found</div>
@@ -94,6 +121,37 @@ const BlogEdit = () => {
               placeholder="Enter blog title"
             />
           </div>
+
+          {/* Image Upload */}
+          <div style={styles.formGroup}>
+            <label htmlFor="media">Add Image</label>
+            <input
+              id="media" 
+              type="file"
+              accept='image/*'
+              multiple
+              onChange={handleFileChange}
+              style={styles.input} 
+            />
+            {/* Image Preview */}
+            <div style={styles.previewGrid}>
+              {previews.map((url, index) => (
+                <div key={index} style={styles.previewWrapper}>
+                  <img src={url} alt={`preview ${index}`} style={styles.previewImage} />
+                
+                  {/* Delete Button Overlay */}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    style={styles.deleteButton}
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={styles.formGroup}>
             <label htmlFor="content" style={styles.label}>
               Content
@@ -220,6 +278,51 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
     marginTop: '20px',
   },
+    previewGrid: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '12px',
+    marginTop: '15px',
+    overflowX: 'auto',
+    whiteSpace: 'nowrap',
+    paddingBottom: '10px',
+    cursor: 'grab',
+    msOverflowStyle: 'none'
+  },
+  previewWrapper: {
+    position: 'relative',
+    height: '300px',
+    minWidth: '300px',
+    borderRadius: '6px',
+    overflow: 'hidden',
+    border: '1px solid #ddd',
+    backgroundColor: '#eee',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    backgroundColor: 'rgba(255, 0, 0, 0.7)', // Semi-transparent red
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '24px',
+    height: '24px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    padding: 0,
+    lineHeight: 1,
+    transition: 'background-color 0.2s',
+  }
 }
 
 export default BlogEdit
