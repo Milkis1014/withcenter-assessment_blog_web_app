@@ -6,6 +6,7 @@ export interface Blog {
   title: string
   content: string
   author_id: string
+  image_urls: string[];
   created_at: string
   updated_at: string
 }
@@ -63,15 +64,42 @@ export const fetchBlogById = createAsyncThunk(
 
 export const createBlog = createAsyncThunk(
   'blog/createBlog',
-  async ({ title, content, author_id }: { title: string; content: string; author_id: string }) => {
-    const { data, error } = await supabase
+  async ({ title, content, author_id, imageFiles }: { 
+    title: string; 
+    content: string; 
+    author_id: string;
+    imageFiles: File[] 
+  }) => {
+    const imageUrls: string[] = [];
+
+    for (const file of imageFiles) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${author_id}/${fileName}`;
+      console.log(`File Path: ${filePath}`);
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(filePath, file);
+      
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+      /* This code snippet is fetching the public URL of an image file stored in a Supabase storage
+      bucket. */
+      const { data: { publicUrl } } = await supabase.storage
+        .from('blog-images')
+        .getPublicUrl(uploadData.path);
+      
+      imageUrls.push(publicUrl);  
+    }
+
+    const { data, error: dbError } = await supabase
       .from('blogs')
-      .insert([{ title, content, author_id }])
+      .insert([{ title, content, author_id, image_urls: imageUrls }])
       .select()
       .single()
 
-    if (error) throw error
-    return data
+    if (dbError) throw dbError;
+    return data;
   }
 )
 

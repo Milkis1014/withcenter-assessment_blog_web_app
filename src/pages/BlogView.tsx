@@ -78,6 +78,20 @@ const BlogView = () => {
             <span>Updated: {new Date(currentBlog.updated_at).toLocaleString()}</span>
           )}
         </div>
+
+        {currentBlog.image_urls && currentBlog.image_urls.length > 0 && (
+          <div style={styles.imageGallery}>
+            {currentBlog.image_urls.map((url, index) => (
+              <img 
+                key={index}
+                src={url}
+                alt={`Blog image ${index + 1}`}
+                style={currentBlog.image_urls.length === 1 ? styles.singleImage : styles.galleryImage} 
+                />
+            ))}
+          </div>
+        )}
+
         <div style={styles.content}>{currentBlog.content}</div>
       </div>
     </div>
@@ -171,6 +185,26 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
+  },
+  imageGallery: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '15px',
+    marginBottom: '30px',
+  },
+  singleImage: {
+    width: '100%',
+    maxHeight: '500px',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    backgroundColor: '#f8f9fa',
+  },
+  galleryImage: {
+    width: 'calc(50%-8pm)',
+    height: '250px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    backgroundColor: '#f8f9fa',
   },
 }
 
