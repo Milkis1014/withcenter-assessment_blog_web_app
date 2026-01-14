@@ -91,6 +91,14 @@ const BlogList = () => {
                 style={styles.blogCard}
               >
                 <h2 style={styles.blogTitle}>{blog.title}</h2>
+                {blog.image_urls && blog.image_urls.length > 0 && (
+                  <img
+                    src={blog.image_urls[0]}
+                    alt={blog.title}
+                    style={styles.singleImage}
+                  />
+                )}
+
                 <p style={styles.blogContent}>
                   {blog.content.length > 150
                     ? `${blog.content.substring(0, 150)}...`
@@ -243,18 +251,29 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
     display: "flex",
     flexDirection: "column",
+    height: "450px",
+    width: "100%",
+    boxSizing: "border-box",
+    overflow: "hidden",
   },
   blogTitle: {
     fontSize: "20px",
     color: "#333",
     marginTop: 0,
     marginBottom: "10px",
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
   },
   blogContent: {
     color: "#666",
     lineHeight: "1.6",
     flexGrow: 1,
     marginBottom: "15px",
+    overflow: "hidden",
+    display: "-webkit-box",
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: "vertical",
   },
   blogMeta: {
     display: "flex",
@@ -269,6 +288,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   blogActions: {
     display: "flex",
     gap: "10px",
+    marginTop: "auto",
+    paddingTop: "10px",
   },
   viewButton: {
     padding: "8px 16px",
@@ -318,6 +339,17 @@ const styles: { [key: string]: React.CSSProperties } = {
   pageInfo: {
     color: "#666",
     fontSize: "14px",
+  },
+  singleImage: {
+    width: "100%",
+    aspectRatio: "16 / 9",
+    objectFit: "cover",
+    borderRadius: "6px",
+    backgroundColor: "#f8f9fa",
+    marginTop: "10px",
+    marginBottom: "15px",
+    display: "block",
+    flexShrink: 0,
   },
 };
 
