@@ -98,7 +98,7 @@ const commentSlice = createSlice({
                 state.comments.unshift(action.payload); // unshift -> Add new comment to top
                 state.loading=false;
             })
-            .addCase(postComment.pending, (state, action) => {
+            .addCase(postComment.pending, (state) => {
                 state.loading=true;
             })
             // Fetch Comments
