@@ -2,6 +2,9 @@ import { useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { fetchBlogById, deleteBlog, clearCurrentBlog } from '../store/slices/blogSlice'
+import CommentInput from '../components/blog-comments/CommentInput'
+import CommentList from '../components/blog-comments/CommentList'
+import { fetchComments } from '../store/slices/commentSlice'
 
 const BlogView = () => {
   const { id } = useParams<{ id: string }>()
@@ -13,6 +16,7 @@ const BlogView = () => {
   useEffect(() => {
     if (id) {
       dispatch(fetchBlogById(id))
+      dispatch(fetchComments(id))
     }
     return () => {
       dispatch(clearCurrentBlog())
@@ -93,6 +97,20 @@ const BlogView = () => {
         )}
 
         <div style={styles.content}>{currentBlog.content}</div>
+          {/* --- NEW COMMENT SECTION --- */}
+          <div style={styles.commentSection}>
+            <h3>Comments</h3>
+            
+            {/* Part 1: Input (Only if user exists) */}
+            {user ? (
+              <CommentInput blogId={id!} userId={user.id} />
+            ) : (
+              <p style={styles.loginPrompt}>Please <Link to="/login">login</Link> to comment.</p>
+            )}
+
+            {/* Part 2: List (We will fetch these later) */}
+            <CommentList/> 
+          </div>
       </div>
     </div>
   )
@@ -205,6 +223,32 @@ const styles: { [key: string]: React.CSSProperties } = {
     objectFit: 'cover',
     borderRadius: '8px',
     backgroundColor: '#f8f9fa',
+  },
+  commentSection: {
+    marginTop: '40px',
+    paddingTop: '30px',
+    borderTop: '2px solid #eee',
+  },
+  commentTextarea: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    minHeight: '80px',
+    marginBottom: '10px',
+    fontFamily: 'inherit',
+  },
+  submitComment: {
+    padding: '10px 20px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  loginPrompt: {
+    color: '#666',
+    fontStyle: 'italic',
   },
 }
 
