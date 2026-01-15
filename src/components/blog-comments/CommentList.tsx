@@ -1,23 +1,57 @@
 import { useAppSelector, useAppDispatch } from "../../store/hooks"
 import { deleteComment, updateComment } from "../../store/slices/commentSlice";
 import { useState } from "react";
+import { uploadCommentImages } from "../../utils/uploadHelper";
+
 const CommentList = () => {
     const { user } = useAppSelector((state) => state.auth);
     const dispatch = useAppDispatch();
     const { comments, loading } = useAppSelector((state) => state.comments);
 
+
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editContent, setEditContent] = useState('');
+    const [editContent, setEditContent] = useState('')
+    const [editImages, setEditImages] = useState<string[]>([])
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleSave = async (id: string) => {
         if (!editContent.trim()) return;
-        await dispatch(updateComment({ id, content: editContent }));
-        setEditingId(null);
+        await dispatch(updateComment({ id, content: editContent, image_urls: editImages }));
+        setEditingId(null)
     }
 
-    const startEditing = (id: string, currentContent: string) => {
-        setEditingId(id);
-        setEditContent(currentContent);
+    const startEditing = (id: string, currentContent: string, currentImages: string[]) => {
+        setEditingId(id)
+        setEditContent(currentContent)
+        setEditImages(currentImages || []);
+    }
+
+    const handleAddEditFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !user) return;
+
+        setIsUploading(true)
+        try {
+            const selectedFiles = Array.from(e.target.files)
+
+            const remainingQuota = 5 - editImages.length
+            const filesToUpload = selectedFiles.slice(0, remainingQuota)
+
+            if (filesToUpload.length === 0) {
+                alert("Maximum of 5 images allowed.")
+                return;
+            }
+
+            const newUrls = await uploadCommentImages(filesToUpload, user.id)
+            setEditImages(prev => [...prev, ...newUrls])
+        } catch (error) {
+            alert("Upload failed. Please try again.")
+        } finally {
+            setIsUploading(false);
+        }
+    }
+
+    const handleRemoveEditImage = (index: number) => {
+        setEditImages(prev => prev.filter((_, i) => i !== index))
     }
 
     const handleDelete = async (commentId: string) => {
@@ -34,40 +68,85 @@ const CommentList = () => {
         return <p style={styles.loginPrompt}>No comments yet.</p>
     }
 
-  return (
-    <div style={styles.commentsList}>
-        {comments.map((c) => (
-            <div key={c.id} style={styles.commentItem}>
-                <div style={styles.commentHeader}>
-                    <small style={styles.commentMeta}>{c.user_email} • {new Date(c.created_at).toLocaleDateString()}</small>
-                    {user?.id === c.user_id && (
-                        <div style={styles.actions}>
-                            <button onClick={() => startEditing(c.id, c.content)} style={styles.editBtn} title="Edit comment">Edit</button>
-                            <button onClick={() => handleDelete(c.id)} style={styles.deleteBtn} title="Delete comment">x</button>
+    return (
+        <div style={styles.commentsList}>
+            {comments.map((c) => (
+                <div key={c.id} style={styles.commentItem}>
+                    <div style={styles.commentHeader}>
+                        <small style={styles.commentMeta}>{c.user_email} • {new Date(c.created_at).toLocaleDateString()}</small>
+                        {user?.id === c.user_id && (
+                            <div style={styles.actions}>
+                                <button onClick={() => startEditing(c.id, c.content, c.image_urls)} style={styles.editBtn} title="Edit comment">Edit</button>
+                                <button onClick={() => handleDelete(c.id)} style={styles.deleteBtn} title="Delete comment">x</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {editingId === c.id ? (
+                        <div style={styles.editContainer}>
+                            <textarea 
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                style={styles.editTextarea} // Matched to style key below
+                            />
+
+                                <div style={styles.imageGrid}>
+                                    {editImages.map((url, i) => (
+                                        <div key={i} style={styles.previewWrapper}>
+                                            <img src={url} style={styles.commentImg} alt="edit-preview" />
+                                            <button
+                                                onClick={() => handleRemoveEditImage(i)}
+                                                style={styles.removeBtn}
+                                            >
+                                                x
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {editImages.length < 5 && (
+                                        <label style={styles.addMoreBtn}>
+                                            <span>{isUploading ? "..." : "+ Add"}</span>
+                                            <input 
+                                                type="file" 
+                                                hidden
+                                                multiple
+                                                accept="image/*"
+                                                onChange={handleAddEditFiles}
+                                                disabled={isUploading}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            
+
+                            <div style={styles.editActions}>
+                                <button onClick={() => handleSave(c.id)} style={styles.saveBtn}>Save</button>
+                                <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
+                            </div>
                         </div>
+                    ) : (   
+                        /* FIXED: Wrapped in a Fragment */
+                        <>
+                            <p style={styles.commentContent}>{c.content}</p>
+                            
+                            {c.image_urls && c.image_urls.length > 0 && (
+                                <div style={styles.imageGrid}>
+                                    {c.image_urls.map((url: string, index: number) => (
+                                        <img 
+                                            key={index} 
+                                            src={url} 
+                                            alt={`Comment attachment ${index + 1}`} 
+                                            style={styles.commentImg} 
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
-
-                {editingId === c.id ? (
-                    <div style={styles.editContainer}>
-                        <textarea 
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                            style={styles.editTextArea}
-                        />
-                        <div style={styles.editActions}>
-                            <button onClick={() => handleSave(c.id)} style={styles.saveBtn}>Save</button>
-                            <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
-                        </div>
-                    </div>
-                ) : (   
-                    <p style={styles.commentContent}>{c.content}</p>
-                )}
-                
-            </div>
-        ))}
-    </div>
-  )
+            ))}
+        </div>
+    )
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -155,6 +234,67 @@ const styles: { [key: string]: React.CSSProperties } = {
         borderRadius: '4px',
         cursor: 'pointer'
     },
+    imageGrid: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '10px',
+        marginTop: '12px', // Separates text from images
+        marginBottom: '12px', // Separate from actions
+    },
+    commentImg: {
+        width: '120px',
+        height: '120px',
+        objectFit: 'cover', // Ensures images don't stretch
+        borderRadius: '4px',
+        border: '1px solid #ddd',
+        cursor: 'zoom-in', // Suggests images can be clicked/viewed
+    },
+    actions: {
+        display: 'flex',
+        alignItems: 'center',
+    },
+    editContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+    },
+    previewWrapper: {
+    position: 'relative',
+    width: '120px',
+    height: '120px',
+},
+removeBtn: {
+    position: 'absolute',
+    top: '-5px',
+    right: '-5px',
+    backgroundColor: '#ff4d4f',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '22px',
+    height: '22px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+},
+addMoreBtn: {
+    width: '120px',
+    height: '120px',
+    border: '2px dashed #ccc',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: '#888',
+    backgroundColor: '#fff',
+    fontSize: '14px',
+    transition: 'all 0.2s ease',
+},
 }
 
 export default CommentList
+

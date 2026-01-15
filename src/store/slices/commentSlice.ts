@@ -1,11 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../lib/supabase";
-
+import { uploadCommentImages } from "../../utils/uploadHelper";
 interface Comment {
     id: string;
     created_at: string;
     content: string;
     blog_id: string;
+    image_urls: string[];
     user_id: string;
     user_email: string;
 }
@@ -24,15 +25,18 @@ const initialState: CommentState = {
 
 export const postComment =createAsyncThunk(
     'comments/post',
-    async ({ blog_id, user_id, content, user_email}: {
+    async ({ blog_id, user_id, content, user_email, files}: {
         blog_id: string;
         user_id: string;
         content: string;
         user_email: string;
+        files: File[]
     }) => {
+        const imageUrls = await uploadCommentImages(files, user_id);
+
         const { data, error } = await supabase
             .from('blog_comments')
-            .insert([{ blog_id, user_id, content, user_email }])
+            .insert([{ blog_id, user_id, content, user_email, image_urls: imageUrls }])
             .select()
             .single();
         
@@ -70,10 +74,10 @@ export const deleteComment = createAsyncThunk(
 
 export const updateComment = createAsyncThunk(
     'comments/update',
-    async ({ id, content }: { id: string; content: string }) => {
+    async ({ id, content, image_urls }: { id: string; content: string; image_urls: string[] }) => {
         const {data, error } = await supabase
             .from('blog_comments')
-            .update({ content })
+            .update({ content, image_urls })
             .eq('id', id)
             .select()
             .single();
@@ -92,6 +96,10 @@ const commentSlice = createSlice({
             // Post Comment
             .addCase(postComment.fulfilled, (state, action) => {
                 state.comments.unshift(action.payload); // unshift -> Add new comment to top
+                state.loading=false;
+            })
+            .addCase(postComment.pending, (state, action) => {
+                state.loading=true;
             })
             // Fetch Comments
             .addCase(fetchComments.pending, (state) => {
