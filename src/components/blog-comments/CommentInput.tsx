@@ -43,7 +43,7 @@ const CommentInput = ({ blogId, userId }: { blogId: string; userId: string }) =>
                 user_id: userId, 
                 content: comment,
                 user_email: user?.email || 'Anonymous',
-                files: files
+                imageFiles: files
             })).unwrap()
             setComment('')
             setFiles([])
