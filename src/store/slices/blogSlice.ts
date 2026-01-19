@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { supabase } from "../../lib/supabase";
+import { uploadBlogImages } from "../../utils/uploadHelper";
 
 export interface Blog {
   id: string;
@@ -75,32 +76,8 @@ export const createBlog = createAsyncThunk(
     author_id: string;
     imageFiles: File[];
   }) => {
-    const imageUrls: string[] = [];
-
-    for (const file of imageFiles) {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(7)}.${fileExt}`;
-      const filePath = `${author_id}/${fileName}`;
-      console.log(`File Path: ${filePath}`);
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("blog-images")
-        .upload(filePath, file);
-
-      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
-
-      /* This code snippet is fetching the public URL of an image file stored in a Supabase storage
-      bucket. */
-      const {
-        data: { publicUrl },
-      } = await supabase.storage
-        .from("blog-images")
-        .getPublicUrl(uploadData.path);
-
-      imageUrls.push(publicUrl);
-    }
-
+    const imageUrls = await uploadBlogImages(imageFiles, author_id)
+    
     const { data, error: dbError } = await supabase
       .from("blogs")
       .insert([{ title, content, author_id, image_urls: imageUrls }])
@@ -114,14 +91,7 @@ export const createBlog = createAsyncThunk(
 
 export const updateBlog = createAsyncThunk(
   "blog/updateBlog",
-  async ({
-    id,
-    title,
-    content,
-    author_id,
-    imageFiles,
-    existingUrls,
-  }: {
+  async ({id, title, content, author_id, imageFiles, existingUrls}: {
     id: string;
     title: string;
     content: string;
@@ -129,30 +99,7 @@ export const updateBlog = createAsyncThunk(
     imageFiles: File[];
     existingUrls: string[];
   }) => {
-    const imageUrls: string[] = [];
-
-    for (const file of imageFiles) {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(7)}.${fileExt}`;
-      const filePath = `${author_id}/${fileName}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("blog-images")
-        .upload(filePath, file);
-
-      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
-
-      /* This code snippet is fetching the public URL of an image file stored in a Supabase storage
-      bucket. */
-      const {
-        data: { publicUrl },
-      } = await supabase.storage
-        .from("blog-images")
-        .getPublicUrl(uploadData.path);
-
-      imageUrls.push(publicUrl);
-    }
+    const imageUrls = await uploadBlogImages(imageFiles, author_id)
 
     const finalImageUrls = [...existingUrls, ...imageUrls];
 

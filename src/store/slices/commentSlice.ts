@@ -25,14 +25,14 @@ const initialState: CommentState = {
 
 export const postComment =createAsyncThunk(
     'comments/post',
-    async ({ blog_id, user_id, content, user_email, files}: {
+    async ({ blog_id, user_id, content, user_email, imageFiles}: {
         blog_id: string;
         user_id: string;
         content: string;
         user_email: string;
-        files: File[]
+        imageFiles: File[]
     }) => {
-        const imageUrls = await uploadCommentImages(files, user_id);
+        const imageUrls = await uploadCommentImages(imageFiles, user_id);
 
         const { data, error } = await supabase
             .from('blog_comments')
