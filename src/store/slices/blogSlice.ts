@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { supabase } from "../../lib/supabase";
 import { uploadBlogImages } from "../../utils/uploadHelper";
-
+import { signOut } from "./authSlice";
 export interface Blog {
   id: string;
   title: string;
@@ -46,7 +46,7 @@ export const fetchBlogs = createAsyncThunk(
 
     if (error) throw error;
     return { blogs: data || [], count: count || 0, page };
-  }
+  },
 );
 
 export const fetchBlogById = createAsyncThunk(
@@ -60,7 +60,7 @@ export const fetchBlogById = createAsyncThunk(
 
     if (error) throw error;
     return data;
-  }
+  },
 );
 
 export const createBlog = createAsyncThunk(
@@ -76,8 +76,8 @@ export const createBlog = createAsyncThunk(
     author_id: string;
     imageFiles: File[];
   }) => {
-    const imageUrls = await uploadBlogImages(imageFiles, author_id)
-    
+    const imageUrls = await uploadBlogImages(imageFiles, author_id);
+
     const { data, error: dbError } = await supabase
       .from("blogs")
       .insert([{ title, content, author_id, image_urls: imageUrls }])
@@ -86,12 +86,19 @@ export const createBlog = createAsyncThunk(
 
     if (dbError) throw dbError;
     return data;
-  }
+  },
 );
 
 export const updateBlog = createAsyncThunk(
   "blog/updateBlog",
-  async ({id, title, content, author_id, imageFiles, existingUrls}: {
+  async ({
+    id,
+    title,
+    content,
+    author_id,
+    imageFiles,
+    existingUrls,
+  }: {
     id: string;
     title: string;
     content: string;
@@ -99,7 +106,7 @@ export const updateBlog = createAsyncThunk(
     imageFiles: File[];
     existingUrls: string[];
   }) => {
-    const imageUrls = await uploadBlogImages(imageFiles, author_id)
+    const imageUrls = await uploadBlogImages(imageFiles, author_id);
 
     const finalImageUrls = [...existingUrls, ...imageUrls];
 
@@ -117,7 +124,7 @@ export const updateBlog = createAsyncThunk(
 
     if (error) throw error;
     return data;
-  }
+  },
 );
 
 export const deleteBlog = createAsyncThunk(
@@ -126,7 +133,7 @@ export const deleteBlog = createAsyncThunk(
     const { error } = await supabase.from("blogs").delete().eq("id", id);
     if (error) throw error;
     return id;
-  }
+  },
 );
 
 const blogSlice = createSlice({
@@ -198,7 +205,7 @@ const blogSlice = createSlice({
       .addCase(updateBlog.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.blogs.findIndex(
-          (blog) => blog.id === action.payload.id
+          (blog) => blog.id === action.payload.id,
         );
         if (index !== -1) {
           state.blogs[index] = action.payload;
@@ -227,6 +234,13 @@ const blogSlice = createSlice({
       .addCase(deleteBlog.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to delete blog";
+      })
+      .addCase(signOut.fulfilled, (state) => {
+        // Reset the blog state to its initial values
+        state.blogs = [];
+        state.currentBlog = null;
+        state.totalCount = 0;
+        state.error = null;
       });
   },
 });
